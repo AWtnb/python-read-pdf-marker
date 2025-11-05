@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 
-def main(path: str) -> None:
+def main(path: str, href: str) -> None:
     pdf = pymupdf.Document(path)
 
     for i in range(pdf.page_count):
@@ -13,8 +13,19 @@ def main(path: str) -> None:
                 rect = annot.rect
                 marked = page.get_text(clip=rect)
                 print(i + 1, rect, str(marked).strip())
-
-    pdf.close()
+                if href:
+                    page.insert_link(
+                        {
+                            "kind": pymupdf.LINK_URI,
+                            "from": rect,
+                            "uri": href,
+                        }
+                    )
+    if href:
+        p = Path(path)
+        out_path = p.with_stem(p.stem + "out")
+        pdf.save(str(out_path), garbage=3, clean=True, pretty=True)
+        pdf.close()
 
 
 if __name__ == "__main__":
@@ -22,4 +33,5 @@ if __name__ == "__main__":
     if 1 < len(args):
         p = args[1]
         if Path(p).exists():
-            main(p)
+            href = args[2] if 2 < len(args) else ""
+            main(p, href)
